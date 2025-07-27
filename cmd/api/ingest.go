@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/andres085/real-time-event-processing-system/internal/validator"
 )
 
 func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
@@ -20,9 +23,30 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		Processed         bool      `json:"processed"`
 	}
 
+	fmt.Printf("Parsed timestamp: %v, IsZero: %v\n", input.Timestamp, input.Timestamp.IsZero())
+
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+
+	v.Check(input.Timestamp.IsZero(), "time_stamp", "must be provided")
+	v.Check(input.Timestamp.Before(time.Now()), "timestamp", "cannot be in the future")
+	v.Check(input.Source != "", "source", "must be provided")
+	v.Check(input.Method != "", "method", "must be provided")
+	v.Check(input.Endpoint != "", "endpoint", "must be provided")
+	v.Check(input.StatusCode >= 100 && input.StatusCode <= 599, "status_code", "must be between 100 and 599")
+	v.Check(input.ResponseTimeMs >= 0, "response_time_ms", "must be greater than 0")
+	v.Check(input.RequestSizeBytes >= 0, "request_size_bytes", "must be greater than 0")
+	v.Check(input.ResponseSizeBytes >= 0, "response_size_bytes", "must be greater than 0")
+	v.Check(input.UserAgent != "", "user_agent", "must be provided")
+	v.Check(input.IpAddress != "", "ip_address", "must be provided")
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
