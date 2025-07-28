@@ -5,25 +5,25 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/andres085/real-time-event-processing-system/internal/data"
 	"github.com/andres085/real-time-event-processing-system/internal/validator"
 )
 
 func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Timestamp         time.Time `json:"timestamp"`
-		Source            string    `json:"source"`
-		Method            string    `json:"method"`
-		Endpoint          string    `json:"endpoint"`
-		StatusCode        int32     `json:"status_code"`
-		ResponseTimeMs    int64     `json:"response_time_ms"`
-		RequestSizeBytes  int64     `json:"request_size_bytes"`
-		ResponseSizeBytes int64     `json:"response_size_bytes"`
-		UserAgent         string    `json:"user_agent"`
-		IpAddress         string    `json:"ip_address"`
-		Processed         bool      `json:"processed"`
+		Timestamp         data.CustomTime `json:"timestamp"`
+		Source            string          `json:"source"`
+		Method            string          `json:"method"`
+		Endpoint          string          `json:"endpoint"`
+		StatusCode        int32           `json:"status_code"`
+		ResponseTimeMs    int64           `json:"response_time_ms"`
+		RequestSizeBytes  int64           `json:"request_size_bytes"`
+		ResponseSizeBytes int64           `json:"response_size_bytes"`
+		UserAgent         string          `json:"user_agent"`
+		IpAddress         string          `json:"ip_address"`
+		Processed         bool            `json:"processed"`
+		CreatedAt         time.Time       `json:"created_at"`
 	}
-
-	fmt.Printf("Parsed timestamp: %v, IsZero: %v\n", input.Timestamp, input.Timestamp.IsZero())
 
 	err := app.readJSON(w, r, &input)
 	if err != nil {
@@ -31,9 +31,11 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Printf("Parsed timestamp: %v, IsZero: %v\n", input.Timestamp, input.Timestamp.IsZero())
+
 	v := validator.New()
 
-	v.Check(input.Timestamp.IsZero(), "time_stamp", "must be provided")
+	v.Check(!input.Timestamp.IsZero(), "timestamp", "must be provided")
 	v.Check(input.Timestamp.Before(time.Now()), "timestamp", "cannot be in the future")
 	v.Check(input.Source != "", "source", "must be provided")
 	v.Check(input.Method != "", "method", "must be provided")
@@ -50,7 +52,7 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "metrics stored successfully"}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "metrics stored successfully", "metric": input}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
