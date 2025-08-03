@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -29,8 +28,6 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-
-	fmt.Printf("Parsed timestamp: %v, IsZero: %v\n", input.Timestamp, input.Timestamp.IsZero())
 
 	v := validator.New()
 
