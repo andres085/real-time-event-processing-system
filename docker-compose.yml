@@ -1,0 +1,15 @@
+services:
+  db:
+    image: 'postgres:latest'
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: realtime-processor
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pa55word
+    container_name: realtime-processor
+    volumes:
+      - db-data:/var/lib/postgresql/data
+volumes:
+  db-data:
