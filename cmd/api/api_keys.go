@@ -10,13 +10,10 @@ import (
 
 func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		ClientId    int       `json:"client_id"`
-		Description string    `json:"description"`
-		Environment string    `json:"environment"`
-		IsActive    bool      `json:"is_active"`
-		RateLimit   int32     `json:"rate_limit_per_minute"`
-		CreatedAt   time.Time `json:"created_at"`
-		Version     int32     `json:"version"`
+		ClientId    int    `json:"client_id"`
+		Description string `json:"description"`
+		Environment string `json:"environment"`
+		RateLimit   int32  `json:"rate_limit_per_minute"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -29,9 +26,9 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 		ClientId:    input.ClientId,
 		Environment: input.Environment,
 		Description: input.Description,
-		IsActive:    input.IsActive,
+		IsActive:    true,
 		RateLimit:   input.RateLimit,
-		Version:     input.Version,
+		Version:     1,
 	}
 
 	plainTextKey, err := apiKey.KeyHash.Generate(input.Environment)

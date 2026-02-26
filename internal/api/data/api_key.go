@@ -23,23 +23,23 @@ type ApiKey struct {
 
 type key []byte
 
-func (k *key) Generate(env string) (*string, error) {
+func (k *key) Generate(env string) (string, error) {
 
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	plainText := "pk_" + env + "_" + base64.URLEncoding.EncodeToString(bytes)
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(plainText), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	*k = hash
 
-	return &plainText, nil
+	return plainText, nil
 }
 
 type ApiKeyModel struct {
