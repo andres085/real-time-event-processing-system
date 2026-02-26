@@ -3,6 +3,7 @@ CREATE TABLE api_keys (
     key_hash BYTEA UNIQUE NOT NULL, 
     client_id VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
+    environment TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     rate_limit_per_minute INTEGER NOT NULL DEFAULT 1000,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

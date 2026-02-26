@@ -12,6 +12,7 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 	var input struct {
 		ClientId    int       `json:"client_id"`
 		Description string    `json:"description"`
+		Environment string    `json:"environment"`
 		IsActive    bool      `json:"is_active"`
 		RateLimit   int32     `json:"rate_limit_per_minute"`
 		CreatedAt   time.Time `json:"created_at"`
@@ -24,15 +25,19 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	keyHash := "asd123456"
-
 	apiKey := &data.ApiKey{
 		ClientId:    input.ClientId,
-		KeyHash:     keyHash,
+		Environment: input.Environment,
 		Description: input.Description,
 		IsActive:    input.IsActive,
 		RateLimit:   input.RateLimit,
 		Version:     input.Version,
+	}
+
+	plainTextKey, err := apiKey.KeyHash.Generate(input.Environment)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
 	}
 
 	err = app.models.ApiKeys.Insert(apiKey)
@@ -44,7 +49,7 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/api/api-key/%d", apiKey.ID))
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"message": "api key stored successfully", "apiKey": input}, nil)
+	err = app.writeJSON(w, http.StatusCreated, envelope{"message": "api key stored successfully", "apiKey": apiKey, "key": plainTextKey}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

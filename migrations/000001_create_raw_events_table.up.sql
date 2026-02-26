@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS raw_events (
     user_agent TEXT,
     ip_address INET,
     processed BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
