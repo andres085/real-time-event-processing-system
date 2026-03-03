@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/andres085/real-time-event-processing-system/internal/api/data"
 	_ "github.com/lib/pq"
 )
 
@@ -23,25 +22,25 @@ type config struct {
 		dsn          string
 		maxOpenConns int
 		maxIdleConns int
-		maxIdleTime  time.Duration
+		maxIdletime  time.Duration
 	}
 }
 
 type application struct {
 	config config
 	logger *slog.Logger
-	models data.Models
 }
 
 func main() {
 	var cfg config
 
-	flag.IntVar(&cfg.port, "port", 5000, "API server port")
+	flag.IntVar(&cfg.port, "port", 4000, "Ingest server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development | staging | production)")
+
 	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("REALTIMEPROCESSOR_DB_DSN"), "PosgreSQL DSN")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
-	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "PostgreSQL max connections idle time")
+	flag.DurationVar(&cfg.db.maxIdletime, "db-max-idle-time", 15*time.Minute, "PostgreSQL max connections idle time")
 
 	flag.Parse()
 
@@ -55,12 +54,11 @@ func main() {
 
 	defer db.Close()
 
-	logger.Info("database connection pool established")
+	logger.Info("database connection pool stablished")
 
 	app := &application{
 		config: cfg,
 		logger: logger,
-		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{
@@ -87,7 +85,7 @@ func openDB(cfg config) (*sql.DB, error) {
 
 	db.SetMaxOpenConns(cfg.db.maxOpenConns)
 	db.SetMaxIdleConns(cfg.db.maxIdleConns)
-	db.SetConnMaxIdleTime(cfg.db.maxIdleTime)
+	db.SetConnMaxIdleTime(cfg.db.maxIdletime)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

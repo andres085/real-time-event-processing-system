@@ -12,9 +12,8 @@ func (app *application) routes() http.Handler {
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
-	router.HandlerFunc(http.MethodGet, "/v1/api/healthcheck", app.healthcheckHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/api/api-key/:id", app.getApiKeyByClientIdHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/api/api-key", app.createApiKeyHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/ingest/healthcheck", app.healthcheckHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/ingest", app.ingestHandler)
 
 	return router
 }

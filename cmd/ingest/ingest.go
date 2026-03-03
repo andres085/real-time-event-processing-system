@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/andres085/real-time-event-processing-system/internal/validator"
+	"github.com/andres085/real-time-event-processing-system/internal/ingest/validator"
 )
 
 func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
