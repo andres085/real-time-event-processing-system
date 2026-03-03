@@ -60,9 +60,11 @@ func (a ApiKeyModel) Insert(apiKey *ApiKey) error {
 func (a ApiKeyModel) Get(id int) (*ApiKey, error) {
 	return nil, nil
 }
+
 func (a ApiKeyModel) Update(apiKey *ApiKey) error {
 	return nil
 }
+
 func (a ApiKeyModel) Delete(id int) error {
 	return nil
 }
