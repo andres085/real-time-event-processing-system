@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/andres085/real-time-event-processing-system/internal/ingest/data"
 	"github.com/andres085/real-time-event-processing-system/internal/ingest/validator"
 )
 
@@ -20,7 +21,6 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		UserAgent         string    `json:"user_agent"`
 		IpAddress         string    `json:"ip_address"`
 		Processed         bool      `json:"processed"`
-		CreatedAt         time.Time `json:"created_at"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -48,7 +48,27 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "metrics stored successfully", "metric": input}, nil)
+	rawEvent := &data.RawEvent{
+		Timestamp:         input.Timestamp,
+		Source:            input.Source,
+		Method:            input.Method,
+		Endpoint:          input.Endpoint,
+		StatusCode:        input.StatusCode,
+		ResponseTimeMs:    input.ResponseTimeMs,
+		RequestSizeBytes:  input.RequestSizeBytes,
+		ResponseSizeBytes: input.ResponseSizeBytes,
+		UserAgent:         input.UserAgent,
+		IpAddress:         input.IpAddress,
+		Processed:         false,
+	}
+
+	err = app.models.RawEvents.Insert(rawEvent)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "metrics stored successfully"}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
