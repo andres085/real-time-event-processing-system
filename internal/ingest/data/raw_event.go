@@ -17,8 +17,6 @@ type RawEvent struct {
 	ResponseSizeBytes int64     `json:"response_size_bytes"`
 	UserAgent         string    `json:"user_agent"`
 	IpAddress         string    `json:"ip_address"`
-	Processed         bool      `json:"processed"`
-	CreatedAt         time.Time `json:"created_at"`
 }
 
 type RawEventModel struct {
@@ -27,9 +25,9 @@ type RawEventModel struct {
 
 func (r RawEventModel) Insert(rawEvent *RawEvent) error {
 	query := `
-	INSERT INTO raw_events(timestamp, source, method, endpoint, status_code, response_time_ms, request_size_bytes, response_size_bytes, user_agent, ip_address, processed)
+	INSERT INTO raw_events(timestamp, source, method, endpoint, status_code, response_time_ms, request_size_bytes, response_size_bytes, user_agent, ip_address)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	RETURNING id, created_at`
+	RETURNING id, timestamp`
 
 	args := []any{
 		rawEvent.Timestamp,
@@ -42,8 +40,7 @@ func (r RawEventModel) Insert(rawEvent *RawEvent) error {
 		rawEvent.ResponseSizeBytes,
 		rawEvent.UserAgent,
 		rawEvent.IpAddress,
-		rawEvent.Processed,
 	}
 
-	return r.DB.QueryRow(query, args...).Scan(&rawEvent.ID, &rawEvent.CreatedAt)
+	return r.DB.QueryRow(query, args...).Scan(&rawEvent.ID, &rawEvent.Timestamp)
 }

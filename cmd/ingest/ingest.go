@@ -20,7 +20,6 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		ResponseSizeBytes int64     `json:"response_size_bytes"`
 		UserAgent         string    `json:"user_agent"`
 		IpAddress         string    `json:"ip_address"`
-		Processed         bool      `json:"processed"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -59,7 +58,6 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		ResponseSizeBytes: input.ResponseSizeBytes,
 		UserAgent:         input.UserAgent,
 		IpAddress:         input.IpAddress,
-		Processed:         false,
 	}
 
 	err = app.models.RawEvents.Insert(rawEvent)

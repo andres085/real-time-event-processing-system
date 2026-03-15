@@ -111,10 +111,11 @@ func generateEvent() Event {
 
 	var responseSize int64
 	endpoint := endpoints[rand.Intn(len(endpoints))]
-	switch {
-	case endpoint == "/api/products/list":
+
+	switch  endpoint{
+	case "/api/products/list":
 		responseSize = int64(rand.Intn(50000) + 10000)
-	case endpoint == "/api/search":
+	case "/api/search":
 		responseSize = int64(rand.Intn(30000) + 5000)
 	default:
 		responseSize = int64(rand.Intn(5000) + 500)
@@ -131,7 +132,6 @@ func generateEvent() Event {
 		ResponseSizeBytes: responseSize,
 		UserAgent:         userAgents[rand.Intn(len(userAgents))],
 		IpAddress:         ips[rand.Intn(len(ips))],
-		Processed:         false,
 	}
 }
 
