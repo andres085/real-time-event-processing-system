@@ -43,7 +43,14 @@ type RawEvent struct {
 	UserAgent         string    `json:"user_agent"`
 	IpAddress         string    `json:"ip_address"`
 	Processed         bool      `json:"processed"`
-	CreatedAt         time.Time `json:"created_at"`
+}
+
+type RequestVolumeAggregation struct {
+	TimeBucket        time.Time        `json:"timebucket"`
+	DurationMinutes   int32            `json:"duration_minutes"`
+	TotalRequests     int32            `json:"total_requests"`
+	BreakdownBySource map[string]int32 `json:"breakdown_by_source"` // Stores the total count of every source
+	BreakdownByMethod map[string]int32 `json:"breakdown_by_method"` // Stores the total count of every method
 }
 
 func main() {
@@ -68,15 +75,35 @@ func main() {
 	log.Printf("Processor started")
 
 	// processMinuteAggregation()
-	rawEvents, err := getRecordsByTimeLapse(db, 62*time.Second)
+	rawEvents, err := getRecordsByTimeLapse(db, 60*time.Minute)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
 
+	r := RequestVolumeAggregation{}
+	r.TimeBucket = time.Now()
+	r.DurationMinutes = 1
+	breakDownBySource := make(map[string]int32)
+	breakDownByMethod := make(map[string]int32)
+
 	for _, event := range rawEvents {
-		fmt.Printf("Event => %v", event)
+		r.TotalRequests++
+
+		if _, ok := breakDownBySource[event.Source]; ok {
+			breakDownBySource[event.Source] = 0
+		} else {
+			breakDownBySource[event.Source]++
+		}
+
+		if _, ok := breakDownByMethod[event.Method]; ok {
+			breakDownByMethod[event.Method] = 0
+		} else {
+			breakDownByMethod[event.Method]++
+		}
 	}
+
+	fmt.Printf("RequestVolumeAggregation %v", r)
 }
 
 func openDB(cfg config) (*sql.DB, error) {
@@ -105,7 +132,7 @@ func getRecordsByTimeLapse(db *sql.DB, duration time.Duration) ([]*RawEvent, err
 	query := `
   		SELECT id, timestamp, source, method, endpoint, status_code, 
                response_time_ms, request_size_bytes, response_size_bytes,
-               user_agent, ip_address, processed, created_at
+               user_agent, ip_address
         FROM raw_events 
         WHERE timestamp >= NOW() - $1::interval
         ORDER BY timestamp ASC
@@ -135,8 +162,6 @@ func getRecordsByTimeLapse(db *sql.DB, duration time.Duration) ([]*RawEvent, err
 			&rawEvent.ResponseSizeBytes,
 			&rawEvent.UserAgent,
 			&rawEvent.IpAddress,
-			&rawEvent.Processed,
-			&rawEvent.CreatedAt,
 		)
 
 		if err != nil {
@@ -153,14 +178,21 @@ func getRecordsByTimeLapse(db *sql.DB, duration time.Duration) ([]*RawEvent, err
 	return rawEvents, nil
 }
 
-func processMinuteAggregation() {
-	ticker := time.NewTicker(1 * time.Minute)
-
-	defer ticker.Stop()
-
-	for range ticker.C {
-		fmt.Println("Processing one minute records")
-	}
+func processMinuteAggregation(db *sql.DB, logger *slog.Logger) {
+	// ticker := time.NewTicker(1 * time.Minute)
+	//
+	// defer ticker.Stop()
+	//
+	// for range ticker.C {
+	// 	rawEvents, err := getRecordsByTimeLapse(db, 62*time.Second)
+	// 	if err != nil {
+	// 		logger.Error(err.Error())
+	// 		os.Exit(1)
+	// 	}
+	//
+	// 	r :=
+	//
+	// }
 }
 
 // func processDailyAggregation() {

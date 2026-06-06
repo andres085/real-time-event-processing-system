@@ -26,7 +26,7 @@ type RawEventModel struct {
 func (r RawEventModel) Insert(rawEvent *RawEvent) error {
 	query := `
 	INSERT INTO raw_events(timestamp, source, method, endpoint, status_code, response_time_ms, request_size_bytes, response_size_bytes, user_agent, ip_address)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	RETURNING id, timestamp`
 
 	args := []any{
