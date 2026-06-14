@@ -1,3 +1,5 @@
+// Package data provides the database models and query methods
+// for the API service, including API key management.
 package data
 
 import (

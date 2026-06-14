@@ -8,9 +8,9 @@ import (
 	"github.com/andres085/real-time-event-processing-system/internal/api/data"
 )
 
-func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) createAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		ClientId    int    `json:"client_id"`
+		ClientID    int    `json:"client_id"`
 		Description string `json:"description"`
 		Environment string `json:"environment"`
 		RateLimit   int32  `json:"rate_limit_per_minute"`
@@ -23,7 +23,7 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	apiKey := &data.ApiKey{
-		ClientId:    input.ClientId,
+		ClientId:    input.ClientID,
 		Environment: input.Environment,
 		Description: input.Description,
 		IsActive:    true,
@@ -52,7 +52,7 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (app *application) getApiKeyByClientIdHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) getAPIKeyByClientIDHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
 		http.NotFound(w, r)

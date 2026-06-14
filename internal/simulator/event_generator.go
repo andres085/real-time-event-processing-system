@@ -1,3 +1,5 @@
+// Package simulator provides utilities to generate and send synthetic events
+// to the ingest service for development and testing purposes.
 package simulator
 
 import (

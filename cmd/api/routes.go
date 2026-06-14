@@ -13,8 +13,8 @@ func (app *application) routes() http.Handler {
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, "/v1/api/healthcheck", app.healthcheckHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/api/api-key/:id", app.getApiKeyByClientIdHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/api/api-key", app.createApiKeyHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/api/api-key/:id", app.getAPIKeyByClientIDHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/api/api-key", app.createAPIKeyHandler)
 
 	return router
 }

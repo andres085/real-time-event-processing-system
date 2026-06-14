@@ -19,7 +19,7 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		RequestSizeBytes  int64     `json:"request_size_bytes"`
 		ResponseSizeBytes int64     `json:"response_size_bytes"`
 		UserAgent         string    `json:"user_agent"`
-		IpAddress         string    `json:"ip_address"`
+		IPAddress         string    `json:"ip_address"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -40,7 +40,7 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 	v.Check(input.RequestSizeBytes >= 0, "request_size_bytes", "must be greater than 0")
 	v.Check(input.ResponseSizeBytes >= 0, "response_size_bytes", "must be greater than 0")
 	v.Check(input.UserAgent != "", "user_agent", "must be provided")
-	v.Check(input.IpAddress != "", "ip_address", "must be provided")
+	v.Check(input.IPAddress != "", "ip_address", "must be provided")
 
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
@@ -57,7 +57,7 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		RequestSizeBytes:  input.RequestSizeBytes,
 		ResponseSizeBytes: input.ResponseSizeBytes,
 		UserAgent:         input.UserAgent,
-		IpAddress:         input.IpAddress,
+		IPAddress:         input.IPAddress,
 	}
 
 	err = app.models.RawEvents.Insert(rawEvent)

@@ -1,19 +1,22 @@
+// Command processor reads raw events from the database and applies
+// the configured processing logic over configurable time windows.
 package main
 
 import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
+
+	ingest "github.com/andres085/real-time-event-processing-system/internal/ingest/data"
+	processorWorker "github.com/andres085/real-time-event-processing-system/internal/processor/worker"
 
 	_ "github.com/lib/pq"
 )
-
-const version = "1.0.0"
 
 type config struct {
 	port int
@@ -23,34 +26,6 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  time.Duration
 	}
-}
-
-type application struct {
-	config config
-	logger *slog.Logger
-}
-
-type RawEvent struct {
-	ID                int       `json:"id"`
-	Timestamp         time.Time `json:"timestamp"`
-	Source            string    `json:"source"`
-	Method            string    `json:"method"`
-	Endpoint          string    `json:"endpoint"`
-	StatusCode        int32     `json:"status_code"`
-	ResponseTimeMs    int64     `json:"response_time_ms"`
-	RequestSizeBytes  int64     `json:"request_size_bytes"`
-	ResponseSizeBytes int64     `json:"response_size_bytes"`
-	UserAgent         string    `json:"user_agent"`
-	IpAddress         string    `json:"ip_address"`
-	Processed         bool      `json:"processed"`
-}
-
-type RequestVolumeAggregation struct {
-	TimeBucket        time.Time        `json:"timebucket"`
-	DurationMinutes   int32            `json:"duration_minutes"`
-	TotalRequests     int32            `json:"total_requests"`
-	BreakdownBySource map[string]int32 `json:"breakdown_by_source"` // Stores the total count of every source
-	BreakdownByMethod map[string]int32 `json:"breakdown_by_method"` // Stores the total count of every method
 }
 
 func main() {
@@ -71,39 +46,33 @@ func main() {
 		os.Exit(1)
 	}
 
+	rawEventModel := ingest.NewModels(db)
+	// eventAggregatorModel := processdata.NewModels(db)
+
 	defer db.Close()
 	log.Printf("Processor started")
 
-	// processMinuteAggregation()
-	rawEvents, err := getRecordsByTimeLapse(db, 60*time.Minute)
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
+	minuteDuration := 62 * time.Second
+	// dailyDuration := 24 * time.Hour
+	// weeklyDuration := 168 * time.Hour
 
-	r := RequestVolumeAggregation{}
-	r.TimeBucket = time.Now()
-	r.DurationMinutes = 1
-	breakDownBySource := make(map[string]int32)
-	breakDownByMethod := make(map[string]int32)
+	eventAggregateWorker := processorWorker.NewEventAggregateWorker(
+		minuteDuration,
+		logger,
+		rawEventModel.RawEvents,
+	)
 
-	for _, event := range rawEvents {
-		r.TotalRequests++
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		if _, ok := breakDownBySource[event.Source]; ok {
-			breakDownBySource[event.Source] = 0
-		} else {
-			breakDownBySource[event.Source]++
-		}
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		eventAggregateWorker.Start(ctx)
+	})
 
-		if _, ok := breakDownByMethod[event.Method]; ok {
-			breakDownByMethod[event.Method] = 0
-		} else {
-			breakDownByMethod[event.Method]++
-		}
-	}
-
-	fmt.Printf("RequestVolumeAggregation %v", r)
+	wg.Wait()
+	// go StartWorker(logger, dailyDuration, db, getRecordsByTimeLapse)
+	// go StartWorker(logger, weeklyDuration, db, getRecordsByTimeLapse)
 }
 
 func openDB(cfg config) (*sql.DB, error) {
@@ -127,82 +96,3 @@ func openDB(cfg config) (*sql.DB, error) {
 
 	return db, nil
 }
-
-func getRecordsByTimeLapse(db *sql.DB, duration time.Duration) ([]*RawEvent, error) {
-	query := `
-  		SELECT id, timestamp, source, method, endpoint, status_code, 
-               response_time_ms, request_size_bytes, response_size_bytes,
-               user_agent, ip_address
-        FROM raw_events 
-        WHERE timestamp >= NOW() - $1::interval
-        ORDER BY timestamp ASC
-	`
-
-	rows, err := db.Query(query, duration.String())
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	rawEvents := []*RawEvent{}
-
-	for rows.Next() {
-		var rawEvent RawEvent
-
-		err := rows.Scan(
-			&rawEvent.ID,
-			&rawEvent.Timestamp,
-			&rawEvent.Source,
-			&rawEvent.Method,
-			&rawEvent.Endpoint,
-			&rawEvent.StatusCode,
-			&rawEvent.ResponseTimeMs,
-			&rawEvent.RequestSizeBytes,
-			&rawEvent.ResponseSizeBytes,
-			&rawEvent.UserAgent,
-			&rawEvent.IpAddress,
-		)
-
-		if err != nil {
-			return nil, err
-		}
-
-		rawEvents = append(rawEvents, &rawEvent)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return rawEvents, nil
-}
-
-func processMinuteAggregation(db *sql.DB, logger *slog.Logger) {
-	// ticker := time.NewTicker(1 * time.Minute)
-	//
-	// defer ticker.Stop()
-	//
-	// for range ticker.C {
-	// 	rawEvents, err := getRecordsByTimeLapse(db, 62*time.Second)
-	// 	if err != nil {
-	// 		logger.Error(err.Error())
-	// 		os.Exit(1)
-	// 	}
-	//
-	// 	r :=
-	//
-	// }
-}
-
-// func processDailyAggregation() {
-
-// }
-
-// func processWeeklyAggregation() {
-
-// }
-
-// func processMonthlyAggregation() {
-
-// }

@@ -1,3 +1,4 @@
+// Package validator provides input validation helpers used by the ingest service.
 package validator
 
 type Validator struct {

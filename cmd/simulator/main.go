@@ -1,3 +1,5 @@
+// Command simulator generates and sends synthetic events to the ingest
+// service to facilitate local development and load testing.
 package main
 
 import (
