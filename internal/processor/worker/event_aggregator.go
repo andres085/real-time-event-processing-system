@@ -2,11 +2,12 @@ package data
 
 import (
 	"context"
-	ingestdata "github.com/andres085/real-time-event-processing-system/internal/ingest/data"
-	processdata "github.com/andres085/real-time-event-processing-system/internal/processor/data"
 	"log/slog"
 	"os"
 	"time"
+
+	ingestdata "github.com/andres085/real-time-event-processing-system/internal/ingest/data"
+	processdata "github.com/andres085/real-time-event-processing-system/internal/processor/data"
 )
 
 type EventAggregateWorker struct {
@@ -29,14 +30,25 @@ func NewEventAggregateWorker(
 
 func (w EventAggregateWorker) Start(ctx context.Context) {
 	ticker := time.NewTicker(w.Duration)
-
 	defer ticker.Stop()
+	// for range ticker.C {
+	// 	err := w.ProcessAggregations(ctx)
+	// 	if err != nil {
+	// 		w.Logger.Error(err.Error())
+	// 		os.Exit(1)
+	// 	}
+	// }
 
-	for range ticker.C {
-		err := w.ProcessAggregations(ctx)
-		if err != nil {
-			w.Logger.Error(err.Error())
-			os.Exit(1)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := w.ProcessAggregations(ctx)
+			if err != nil {
+				w.Logger.Error(err.Error())
+				os.Exit(1)
+			}
 		}
 	}
 }

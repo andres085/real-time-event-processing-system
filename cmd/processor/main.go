@@ -9,7 +9,9 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	ingest "github.com/andres085/real-time-event-processing-system/internal/ingest/data"
@@ -62,15 +64,33 @@ func main() {
 		rawEventModel.RawEvents,
 	)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		eventAggregateWorker.Start(ctx)
 	})
 
-	wg.Wait()
+	<-ctx.Done()
+	stop()
+	logger.Info("Shutdown received, waiting for cleaning...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		logger.Info("All clean.")
+	case <-shutdownCtx.Done():
+		logger.Info("Timeout reached, forcing exit.")
+	}
+
 	// go StartWorker(logger, dailyDuration, db, getRecordsByTimeLapse)
 	// go StartWorker(logger, weeklyDuration, db, getRecordsByTimeLapse)
 }
