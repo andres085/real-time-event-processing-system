@@ -6,7 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	ingest "github.com/andres085/real-time-event-processing-system/internal/ingest/data"
+	process "github.com/andres085/real-time-event-processing-system/internal/processor/data"
 	processorWorker "github.com/andres085/real-time-event-processing-system/internal/processor/worker"
 
 	_ "github.com/lib/pq"
@@ -48,28 +48,41 @@ func main() {
 		os.Exit(1)
 	}
 
-	rawEventModel := ingest.NewModels(db)
-	// eventAggregatorModel := processdata.NewModels(db)
+	inputModel := ingest.NewModels(db)
+	outputModel := process.NewModels(db)
 
 	defer db.Close()
-	log.Printf("Processor started")
+	logger.Info("Processor started")
 
-	minuteDuration := 62 * time.Second
-	// dailyDuration := 24 * time.Hour
-	// weeklyDuration := 168 * time.Hour
-
-	eventAggregateWorker := processorWorker.NewEventAggregateWorker(
-		minuteDuration,
-		logger,
-		rawEventModel.RawEvents,
-	)
+	workerConfigs := []processorWorker.EventAggregateWorker{
+		{
+			Duration:    62 * time.Second,
+			Logger:      logger,
+			InputModel:  inputModel.RawEvents,
+			OutputModel: outputModel.RequestVolumeAggregationData,
+		},
+		{
+			Duration:    24 * time.Hour,
+			Logger:      logger,
+			InputModel:  inputModel.RawEvents,
+			OutputModel: outputModel.RequestVolumeAggregationData,
+		}, {
+			Duration:    168 * time.Hour,
+			Logger:      logger,
+			InputModel:  inputModel.RawEvents,
+			OutputModel: outputModel.RequestVolumeAggregationData,
+		},
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	var wg sync.WaitGroup
-	wg.Go(func() {
-		eventAggregateWorker.Start(ctx)
-	})
+	for _, worker := range workerConfigs {
+		wg.Go(func() {
+			worker.Start(ctx)
+		})
+
+	}
 
 	<-ctx.Done()
 	stop()
@@ -90,9 +103,6 @@ func main() {
 	case <-shutdownCtx.Done():
 		logger.Info("Timeout reached, forcing exit.")
 	}
-
-	// go StartWorker(logger, dailyDuration, db, getRecordsByTimeLapse)
-	// go StartWorker(logger, weeklyDuration, db, getRecordsByTimeLapse)
 }
 
 func openDB(cfg config) (*sql.DB, error) {

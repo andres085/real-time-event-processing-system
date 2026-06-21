@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"time"
@@ -11,34 +12,31 @@ import (
 )
 
 type EventAggregateWorker struct {
-	Duration time.Duration
-	Logger   *slog.Logger
-	Model    ingestdata.RawEventModel
+	Duration    time.Duration
+	Logger      *slog.Logger
+	InputModel  ingestdata.RawEventModel
+	OutputModel processdata.RequestVolumeAggregationDataModel
 }
 
 func NewEventAggregateWorker(
 	duration time.Duration,
 	logger *slog.Logger,
-	model ingestdata.RawEventModel,
+	inputModel ingestdata.RawEventModel,
+	outputModel processdata.RequestVolumeAggregationDataModel,
 ) EventAggregateWorker {
 	return EventAggregateWorker{
 		duration,
 		logger,
-		model,
+		inputModel,
+		outputModel,
 	}
 }
 
 func (w EventAggregateWorker) Start(ctx context.Context) {
 	ticker := time.NewTicker(w.Duration)
 	defer ticker.Stop()
-	// for range ticker.C {
-	// 	err := w.ProcessAggregations(ctx)
-	// 	if err != nil {
-	// 		w.Logger.Error(err.Error())
-	// 		os.Exit(1)
-	// 	}
-	// }
 
+	w.Logger.Info("Worker for duration started with", "duration", w.Duration)
 	for {
 		select {
 		case <-ctx.Done():
@@ -54,48 +52,57 @@ func (w EventAggregateWorker) Start(ctx context.Context) {
 }
 
 func (w EventAggregateWorker) ProcessAggregations(ctx context.Context) error {
-	events, err := w.Model.GetRecordsByTimeLapse(w.Duration)
+	events, err := w.InputModel.GetRecordsByTimeLapse(w.Duration)
 
 	if err != nil {
-		w.Logger.Error("Fetch events :%w", err)
+		w.Logger.Error("fetch events", "error", err.Error())
 		return err
 	}
 
 	w.Logger.Info("fetched events", "count", len(events), "duration", w.Duration)
 
-	aggregateData(events, w.Logger)
+	a, err := aggregateData(events, w.Duration)
+	if err != nil {
+		w.Logger.Error("failed to aggregate data", "error", err.Error())
+		return err
+	}
+
+	err = w.OutputModel.Insert(a)
+	if err != nil {
+		w.Logger.Error("failed to insert data", "error", err.Error())
+		return err
+	}
 
 	return nil
 }
 
-func aggregateData(rawEvents []*ingestdata.RawEvent, logger *slog.Logger) {
-	r := processdata.RequestVolumeAggregationData{}
+func aggregateData(
+	rawEvents []*ingestdata.RawEvent,
+	duration time.Duration,
+) (*processdata.RequestVolumeAggregationData, error) {
+	r := &processdata.RequestVolumeAggregationData{}
 	r.TimeBucket = time.Now()
-	r.DurationMinutes = 1
+	r.DurationMinutes = int(duration.Minutes())
+
 	breakDownBySource := make(map[string]int32)
 	breakDownByMethod := make(map[string]int32)
 
 	for _, event := range rawEvents {
 		r.TotalRequests++
-
-		if _, ok := breakDownBySource[event.Source]; ok {
-			breakDownBySource[event.Source]++
-		} else {
-			breakDownBySource[event.Source] = 0
-		}
-
-		if _, ok := breakDownByMethod[event.Method]; ok {
-			breakDownByMethod[event.Method] = 0
-		} else {
-			breakDownByMethod[event.Method]++
-		}
+		breakDownBySource[event.Source]++
+		breakDownByMethod[event.Method]++
 	}
 
-	logger.Info("arregation result",
-		"id", r.ID,
-		"time_bucket", r.TimeBucket.Format(time.RFC3339),
-		"duration_minutes", r.DurationMinutes,
-		"total_requests", r.TotalRequests,
-		"created_at", r.CreatedAt.Format(time.RFC3339),
-	)
+	breakDownBySourceJSON, err := json.Marshal(breakDownBySource)
+	if err != nil {
+		return nil, err
+	}
+	breakDownByMethodJSON, err := json.Marshal(breakDownByMethod)
+	if err != nil {
+		return nil, err
+	}
+	r.BreakdownBySource = breakDownBySourceJSON
+	r.BreakdownByMethod = breakDownByMethodJSON
+
+	return r, nil
 }

@@ -54,7 +54,15 @@ func (a ApiKeyModel) Insert(apiKey *ApiKey) error {
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING id, created_at, version`
 
-	args := []any{apiKey.ClientId, apiKey.KeyHash, apiKey.Description, apiKey.Environment, apiKey.IsActive, apiKey.RateLimit, apiKey.Version}
+	args := []any{
+		apiKey.ClientId,
+		apiKey.KeyHash,
+		apiKey.Description,
+		apiKey.Environment,
+		apiKey.IsActive,
+		apiKey.RateLimit,
+		apiKey.Version,
+	}
 
 	return a.DB.QueryRow(query, args...).Scan(&apiKey.ID, &apiKey.CreatedAt, &apiKey.Version)
 }

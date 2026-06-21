@@ -1,9 +1,9 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
-	ingestdata "github.com/andres085/real-time-event-processing-system/internal/ingest/data"
 	"time"
 )
 
@@ -21,4 +21,25 @@ type RequestVolumeAggregationDataModel struct {
 	DB *sql.DB
 }
 
-func (m RequestVolumeAggregationDataModel) Create(rawEvent ingestdata.RawEvent) {}
+func (m RequestVolumeAggregationDataModel) Insert(
+	requestVolumeAggregationData *RequestVolumeAggregationData,
+) error {
+	query := `
+	INSERT INTO request_volume_aggregations(time_bucket, duration_minutes, total_requests, breakdown_by_source, breakdown_by_method)
+	VALUES ($1, $2, $3, $4, $5)`
+
+	args := []any{
+		requestVolumeAggregationData.TimeBucket,
+		requestVolumeAggregationData.DurationMinutes,
+		requestVolumeAggregationData.TotalRequests,
+		requestVolumeAggregationData.BreakdownBySource,
+		requestVolumeAggregationData.BreakdownByMethod,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := m.DB.ExecContext(ctx, query, args...)
+
+	return err
+}
