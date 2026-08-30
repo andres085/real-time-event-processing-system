@@ -1,0 +1,8 @@
+### Get Metrics Volume
+# WIP: el handler todavia no devuelve nada, solo tiene un fmt.Println de prueba.
+# Va a responder 200 con body vacio hasta que se implemente la logica real.
+# Idea: deberia devolver metricas de volumen de eventos procesados
+# (ver internal/processor/worker para donde se generan los datos).
+# Ver: cmd/api/metrics.go getMetricsVolumeHandler
+# @name metricsVolume
+GET {{host}}/v1/api/metrics/volume

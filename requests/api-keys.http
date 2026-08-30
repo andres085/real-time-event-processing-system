@@ -1,0 +1,29 @@
+### Create API Key
+# Genera una API key nueva para un client_id.
+# La respuesta trae "key" en texto plano UNA sola vez - no se puede recuperar
+# despues, en DB solo queda el hash (ver apiKey.KeyHash.Generate).
+# Campos del body:
+#   client_id             (int)    id del cliente al que pertenece la key
+#   description           (string) para identificarla despues
+#   environment            (string) development | staging | production (se usa al generar el hash)
+#   rate_limit_per_minute  (int32)  limite del rate limiter para esta key
+# Devuelve 201 con { message, apiKey, key } y header Location con la URL del recurso.
+# Ver: cmd/api/api_keys.go createAPIKeyHandler
+# @name createApiKey
+POST {{host}}/v1/api/api-key
+Content-Type: application/json
+
+{
+  "client_id": 1,
+  "description": "API key de prueba",
+  "environment": "development",
+  "rate_limit_per_minute": 2000
+}
+
+### Get API Key by Client ID
+# OJO: por ahora el handler devuelve datos hardcodeados de prueba (ID: 1,
+# "Test Api Key", etc.), no busca de verdad en la base por client_id todavia.
+# El :id del path se mapea a ClientId en la respuesta.
+# Ver: cmd/api/api_keys.go getAPIKeyByClientIDHandler
+# @name getApiKeyByClientId
+GET {{host}}/v1/api/api-key/1

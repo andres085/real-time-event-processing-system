@@ -16,5 +16,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/api/api-key/:id", app.getAPIKeyByClientIDHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/api/api-key", app.createAPIKeyHandler)
 
+	router.HandlerFunc(http.MethodGet, "/v1/api/metrics/volume/:apiKeyId", app.getMetricsVolumeHandler)
+
 	return router
 }

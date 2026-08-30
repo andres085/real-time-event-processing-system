@@ -1,0 +1,7 @@
+### Healthcheck
+# Chequea que el servidor este arriba y responde.
+# No requiere auth ni params.
+# Devuelve 200 con status "available" y system_info (environment + version)
+# Ver: cmd/api/healthcheck.go
+# @name healthcheck
+GET {{host}}/v1/api/healthcheck
