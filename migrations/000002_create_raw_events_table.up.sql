@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS raw_events (
     request_size_bytes INTEGER NOT NULL,
     response_size_bytes INTEGER NOT NULL,
     user_agent TEXT,
-    ip_address INET
+    ip_address INET,
+    client_id UUID REFERENCES clients(id) ON DELETE CASCADE
 );
