@@ -22,8 +22,8 @@ func (app *application) createAPIKeyHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	apiKey := &data.ApiKey{
-		ClientId:    input.ClientID,
+	apiKey := &data.APIKey{
+		ClientID:    input.ClientID,
 		Environment: input.Environment,
 		Description: input.Description,
 		IsActive:    true,
@@ -37,7 +37,7 @@ func (app *application) createAPIKeyHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.models.ApiKeys.Insert(apiKey)
+	err = app.models.APIKeys.Insert(apiKey)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -46,7 +46,12 @@ func (app *application) createAPIKeyHandler(w http.ResponseWriter, r *http.Reque
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/api/api-key/%d", apiKey.ID))
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"message": "api key stored successfully", "apiKey": apiKey, "key": plainTextKey}, nil)
+	err = app.writeJSON(
+		w,
+		http.StatusCreated,
+		envelope{"message": "api key stored successfully", "apiKey": apiKey, "key": plainTextKey},
+		nil,
+	)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -59,9 +64,9 @@ func (app *application) getAPIKeyByClientIDHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	apiKey := data.ApiKey{
+	apiKey := data.APIKey{
 		ID:          1,
-		ClientId:    id,
+		ClientID:    id,
 		Description: "Test Api Key",
 		IsActive:    true,
 		RateLimit:   2000,
@@ -72,6 +77,10 @@ func (app *application) getAPIKeyByClientIDHandler(w http.ResponseWriter, r *htt
 	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": apiKey}, nil)
 	if err != nil {
 		app.logger.Error(err.Error())
-		http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
+		http.Error(
+			w,
+			"The server encountered a problem and could not process your request",
+			http.StatusInternalServerError,
+		)
 	}
 }
