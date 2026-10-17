@@ -20,6 +20,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/api/clients/:id", app.showClientHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/api/clients", app.listClientsHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/api/clients/:id", app.updateClientHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/api/clients/:id", app.deleteClientHandler)
 
 	router.HandlerFunc(http.MethodGet, "/v1/api/metrics/volume/:apiKeyId", app.getMetricsVolumeHandler)
 

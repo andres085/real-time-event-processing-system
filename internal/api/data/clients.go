@@ -140,3 +140,32 @@ func (c ClientModel) Update(client *Client) error {
 
 	return nil
 }
+
+func (c ClientModel) Delete(id string) error {
+	if id == "" {
+		return ErrRecordNotFound
+	}
+
+	query := `
+	DELETE FROM clients
+	WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := c.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
+}
