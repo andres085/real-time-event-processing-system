@@ -1,14 +1,17 @@
 ### Create API Key
-# Genera una API key nueva para un client_id.
-# La respuesta trae "key" en texto plano UNA sola vez - no se puede recuperar
-# despues, en DB solo queda el hash (ver apiKey.KeyHash.Generate).
-# Campos del body:
-#   client_id             (int)    id del cliente al que pertenece la key
-#   description           (string) para identificarla despues
-#   environment            (string) development | staging | production (se usa al generar el hash)
-#   rate_limit_per_minute  (int32)  limite del rate limiter para esta key
-# Devuelve 201 con { message, apiKey, key } y header Location con la URL del recurso.
-# Ver: cmd/api/api_keys.go createAPIKeyHandler
+# Generates a new API key for a client.
+# The response includes the plain-text "key" ONLY ONCE - it cannot be retrieved
+# later, only its hash is stored in the DB (see apiKey.KeyHash.Generate).
+# Body fields:
+#   client_id              (int)     ID of the client that owns the key
+#   description            (string)  free text to identify the key later
+#   environment            (string)  development | staging | production (used when generating the key)
+#   rate_limit_per_minute  (int32)   rate limiter limit for this key
+# Returns 201 with { message, apiKey, key }.
+# Errors: 400 if the body is malformed JSON.
+# NOTE: the Location header is built in the handler but not sent yet
+#       (writeJSON receives nil instead of headers).
+# See: cmd/api/api_keys.go createAPIKeyHandler
 # @name createApiKey
 POST {{host}}/v1/api/api-key
 Content-Type: application/json
@@ -21,9 +24,12 @@ Content-Type: application/json
 }
 
 ### Get API Key by Client ID
-# OJO: por ahora el handler devuelve datos hardcodeados de prueba (ID: 1,
-# "Test Api Key", etc.), no busca de verdad en la base por client_id todavia.
-# El :id del path se mapea a ClientId en la respuesta.
-# Ver: cmd/api/api_keys.go getAPIKeyByClientIDHandler
+# WIP: the handler returns hardcoded test data (ID: 1, "Test Api Key", etc.),
+# it does not query the database by client_id yet.
+# Path params:
+#   id  (int)  client ID, echoed back as client_id in the response
+# Returns 200 with { apiKey }.
+# Errors: plain-text 404 (http.NotFound) if the ID is not an integer.
+# See: cmd/api/api_keys.go getAPIKeyByClientIDHandler
 # @name getApiKeyByClientId
 GET {{host}}/v1/api/api-key/1

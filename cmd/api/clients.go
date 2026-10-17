@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/andres085/real-time-event-processing-system/internal/api/data"
+	"github.com/andres085/real-time-event-processing-system/internal/api/validator"
+	"github.com/julienschmidt/httprouter"
 )
 
 func (app *application) createClient(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +45,152 @@ func (app *application) createClient(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) getClientByClientID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Get Client By ID Handler")
+func (app *application) showClientHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	id := params.ByName("id")
+
+	client, err := app.models.Clients.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, 200, envelope{"client": client}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
+
+func (app *application) listClientsHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		// ID   string
+		Name string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+
+	// input.ID = app.readString(qs, "id", "")
+	input.Name = app.readString(qs, "name", "")
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafelist = []string{"id", "name"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	clients, metadata, err := app.models.Clients.GetAll(input.Name, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"clients": clients, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+// func (app *application) updateClientHandler(w http.ResponseWriter, r *http.Request) {
+// 	id, err := app.readIDParam(r)
+// 	if err != nil {
+// 		app.notFoundResponse(w, r)
+// 		return
+// 	}
+//
+// 	movie, err := app.models.Movies.Get(id)
+// 	if err != nil {
+// 		switch {
+// 		case errors.Is(err, data.ErrRecordNotFound):
+// 			app.notFoundResponse(w, r)
+// 		default:
+// 			app.serverErrorResponse(w, r, err)
+// 		}
+// 		return
+// 	}
+//
+// 	var input struct {
+// 		Title   *string       `json:"title"`
+// 		Year    *int32        `json:"year"`
+// 		Runtime *data.Runtime `json:"runtime"`
+// 		Genres  []string      `json:"genres"`
+// 	}
+//
+// 	err = app.readJSON(w, r, &input)
+// 	if err != nil {
+// 		app.badRequestResponse(w, r, err)
+// 		return
+// 	}
+//
+// 	if input.Title != nil {
+// 		movie.Title = *input.Title
+// 	}
+// 	if input.Year != nil {
+// 		movie.Year = *input.Year
+// 	}
+// 	if input.Runtime != nil {
+// 		movie.Runtime = *input.Runtime
+// 	}
+// 	if input.Genres != nil {
+// 		movie.Genres = input.Genres
+// 	}
+//
+// 	v := validator.New()
+//
+// 	if data.ValidateMovie(v, movie); !v.Valid() {
+// 		app.failedValidationResponse(w, r, v.Errors)
+// 		return
+// 	}
+//
+// 	err = app.models.Movies.Update(movie)
+// 	if err != nil {
+// 		switch {
+// 		case errors.Is(err, data.ErrEditConflict):
+// 			app.editConflictResponse(w, r)
+// 		default:
+// 			app.serverErrorResponse(w, r, err)
+// 		}
+// 		return
+// 	}
+//
+// 	err = app.writeJSON(w, 200, envelope{"movie": movie}, nil)
+// 	if err != nil {
+// 		app.serverErrorResponse(w, r, err)
+// 	}
+// }
+//
+// func (app *application) deleteClientHandler(w http.ResponseWriter, r *http.Request) {
+// 	id, err := app.readIDParam(r)
+// 	if err != nil {
+// 		app.notFoundResponse(w, r)
+// 		return
+// 	}
+//
+// 	err = app.models.Movies.Delete(id)
+// 	if err != nil {
+// 		switch {
+// 		case errors.Is(err, data.ErrRecordNotFound):
+// 			app.notFoundResponse(w, r)
+// 		default:
+// 			app.serverErrorResponse(w, r, err)
+// 		}
+// 		return
+// 	}
+//
+// 	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie sucessfully deleted"}, nil)
+// 	if err != nil {
+// 		app.serverErrorResponse(w, r, err)
+// 	}
+// }

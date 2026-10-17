@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/andres085/real-time-event-processing-system/internal/api/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -90,7 +92,6 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 }
 
 func (app *application) readIDParam(r *http.Request) (int, error) {
-
 	params := httprouter.ParamsFromContext(r.Context())
 
 	id, err := strconv.Atoi(params.ByName("id"))
@@ -99,4 +100,30 @@ func (app *application) readIDParam(r *http.Request) (int, error) {
 	}
 
 	return id, nil
+}
+
+func (app *application) readString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+
+	return i
 }

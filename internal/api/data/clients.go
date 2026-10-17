@@ -3,7 +3,10 @@
 package data
 
 import (
+	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 )
 
@@ -20,19 +23,85 @@ type ClientModel struct {
 
 func (c ClientModel) Insert(client *Client) error {
 	query := `
-	INSERT INTO clients(id, name, version)
-	VALUES (gen_random_uuid(), $1, $2)
+	INSERT INTO clients(id, name)
+	VALUES (gen_random_uuid(), $1)
 	RETURNING id, name, created_at, version`
 
-	// args := []any{
-	// 	client.Name,
-	// 	client.Version,
-	// }
-
-	return c.DB.QueryRow(query, client.Name, client.Version).
+	return c.DB.QueryRow(query, client.Name).
 		Scan(&client.ID, &client.Name, &client.CreatedAt, &client.Version)
 }
 
 func (c ClientModel) Get(id string) (*Client, error) {
-	return nil, nil
+	query := `
+	SELECT  id, created_at, name, version
+	FROM clients
+	WHERE id = $1`
+
+	var client Client
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := c.DB.QueryRowContext(ctx, query, id).
+		Scan(&client.ID, &client.CreatedAt, &client.Name, &client.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &client, nil
+}
+
+func (c ClientModel) GetAll(name string, filters Filters) ([]*Client, Metadata, error) {
+
+	query := fmt.Sprintf(`
+	SELECT count(*) OVER(), id, name, created_at, version
+	FROM clients
+	WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
+	ORDER BY %s %s, id ASC
+	LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []any{name, filters.limit(), filters.offset()}
+
+	rows, err := c.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	defer rows.Close()
+
+	totalRecords := 0
+	clients := []*Client{}
+
+	for rows.Next() {
+		var client Client
+
+		err := rows.Scan(
+			&totalRecords,
+			&client.ID,
+			&client.Name,
+			&client.CreatedAt,
+			&client.Version,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		clients = append(clients, &client)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return clients, metadata, nil
 }
