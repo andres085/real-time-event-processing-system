@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/andres085/real-time-event-processing-system/internal/api/validator"
 )
 
 type Client struct {
@@ -18,6 +20,14 @@ type Client struct {
 }
 
 type ClientModel struct {
+	DB *sql.DB
+}
+
+func ValidateClient(v *validator.Validator, client *Client) {
+	v.Check(client.Name != "", "title", "must be provided")
+}
+
+type MovieModel struct {
 	DB *sql.DB
 }
 
@@ -104,4 +114,29 @@ func (c ClientModel) GetAll(name string, filters Filters) ([]*Client, Metadata, 
 	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
 
 	return clients, metadata, nil
+}
+
+func (c ClientModel) Update(client *Client) error {
+	query := `
+	UPDATE clients
+	SET name = $1, version = version + 1
+	WHERE id = $2 AND version = $3
+	RETURNING version`
+
+	args := []any{client.Name, client.ID, client.Version}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := c.DB.QueryRowContext(ctx, query, args...).Scan(&client.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
 }

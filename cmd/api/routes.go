@@ -19,6 +19,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/api/clients", app.createClient)
 	router.HandlerFunc(http.MethodGet, "/v1/api/clients/:id", app.showClientHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/api/clients", app.listClientsHandler)
+	router.HandlerFunc(http.MethodPatch, "/v1/api/clients/:id", app.updateClientHandler)
 
 	router.HandlerFunc(http.MethodGet, "/v1/api/metrics/volume/:apiKeyId", app.getMetricsVolumeHandler)
 

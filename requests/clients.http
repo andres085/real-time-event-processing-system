@@ -40,3 +40,22 @@ GET {{host}}/v1/api/clients/91653ea7-68c5-4c45-a820-af40807af598
 # See: cmd/api/clients.go listClientsHandler, internal/api/data/filters.go
 # @name listClients
 GET {{host}}/v1/api/clients
+
+### List Clients
+# Returns a paginated list of clients.
+# Query params (all optional):
+#   name       (string)  full-text search on the name (to_tsvector 'simple'); empty = no filter
+#   page       (int)     page number, 1 - 10,000,000 (default 1)
+#   page_size  (int)     results per page, 1 - 100 (default 20)
+#   sort       (string)  id | name (default id); a "-" prefix means DESC (e.g. -name)
+# Returns 200 with { clients, metadata } where metadata =
+#   { current_page, page_size, first_page, last_page, total_records }
+#   (metadata is {} when there are no results).
+# Errors: 422 with a field -> message map if a filter fails validation.
+# See: cmd/api/clients.go listClientsHandler, internal/api/data/filters.go
+# @name updateClient
+PATCH {{host}}/v1/api/clients/33488f41-7b8d-4003-aa9f-05938e331a4a
+
+{
+    "name": "Client 2"
+}

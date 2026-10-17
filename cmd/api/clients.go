@@ -103,73 +103,59 @@ func (app *application) listClientsHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// func (app *application) updateClientHandler(w http.ResponseWriter, r *http.Request) {
-// 	id, err := app.readIDParam(r)
-// 	if err != nil {
-// 		app.notFoundResponse(w, r)
-// 		return
-// 	}
-//
-// 	movie, err := app.models.Movies.Get(id)
-// 	if err != nil {
-// 		switch {
-// 		case errors.Is(err, data.ErrRecordNotFound):
-// 			app.notFoundResponse(w, r)
-// 		default:
-// 			app.serverErrorResponse(w, r, err)
-// 		}
-// 		return
-// 	}
-//
-// 	var input struct {
-// 		Title   *string       `json:"title"`
-// 		Year    *int32        `json:"year"`
-// 		Runtime *data.Runtime `json:"runtime"`
-// 		Genres  []string      `json:"genres"`
-// 	}
-//
-// 	err = app.readJSON(w, r, &input)
-// 	if err != nil {
-// 		app.badRequestResponse(w, r, err)
-// 		return
-// 	}
-//
-// 	if input.Title != nil {
-// 		movie.Title = *input.Title
-// 	}
-// 	if input.Year != nil {
-// 		movie.Year = *input.Year
-// 	}
-// 	if input.Runtime != nil {
-// 		movie.Runtime = *input.Runtime
-// 	}
-// 	if input.Genres != nil {
-// 		movie.Genres = input.Genres
-// 	}
-//
-// 	v := validator.New()
-//
-// 	if data.ValidateMovie(v, movie); !v.Valid() {
-// 		app.failedValidationResponse(w, r, v.Errors)
-// 		return
-// 	}
-//
-// 	err = app.models.Movies.Update(movie)
-// 	if err != nil {
-// 		switch {
-// 		case errors.Is(err, data.ErrEditConflict):
-// 			app.editConflictResponse(w, r)
-// 		default:
-// 			app.serverErrorResponse(w, r, err)
-// 		}
-// 		return
-// 	}
-//
-// 	err = app.writeJSON(w, 200, envelope{"movie": movie}, nil)
-// 	if err != nil {
-// 		app.serverErrorResponse(w, r, err)
-// 	}
-// }
+func (app *application) updateClientHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	id := params.ByName("id")
+
+	client, err := app.models.Clients.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	var input struct {
+		Name *string `json:"name"`
+	}
+
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if input.Name != nil {
+		client.Name = *input.Name
+	}
+
+	v := validator.New()
+
+	if data.ValidateClient(v, client); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	err = app.models.Clients.Update(client)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, 200, envelope{"client": client}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
 //
 // func (app *application) deleteClientHandler(w http.ResponseWriter, r *http.Request) {
 // 	id, err := app.readIDParam(r)
