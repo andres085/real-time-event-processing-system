@@ -37,7 +37,10 @@ func (c ClientModel) Insert(client *Client) error {
 	VALUES (gen_random_uuid(), $1)
 	RETURNING id, name, created_at, version`
 
-	return c.DB.QueryRow(query, client.Name).
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return c.DB.QueryRowContext(ctx, query, client.Name).
 		Scan(&client.ID, &client.Name, &client.CreatedAt, &client.Version)
 }
 
