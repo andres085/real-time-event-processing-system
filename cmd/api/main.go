@@ -1,3 +1,5 @@
+// Command api starts the HTTP server that exposes the public API
+// for the real-time event processing system.
 package main
 
 import (

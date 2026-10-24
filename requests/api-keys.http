@@ -1,0 +1,35 @@
+### Create API Key
+# Generates a new API key for a client.
+# The response includes the plain-text "key" ONLY ONCE - it cannot be retrieved
+# later, only its hash is stored in the DB (see apiKey.KeyHash.Generate).
+# Body fields:
+#   client_id              (int)     ID of the client that owns the key
+#   description            (string)  free text to identify the key later
+#   environment            (string)  development | staging | production (used when generating the key)
+#   rate_limit_per_minute  (int32)   rate limiter limit for this key
+# Returns 201 with { message, apiKey, key }.
+# Errors: 400 if the body is malformed JSON.
+# NOTE: the Location header is built in the handler but not sent yet
+#       (writeJSON receives nil instead of headers).
+# See: cmd/api/api_keys.go createAPIKeyHandler
+# @name createApiKey
+POST {{host}}/v1/api/api-key
+Content-Type: application/json
+
+{
+  "client_id": 1,
+  "description": "API key de prueba",
+  "environment": "development",
+  "rate_limit_per_minute": 2000
+}
+
+### Get API Key by Client ID
+# WIP: the handler returns hardcoded test data (ID: 1, "Test Api Key", etc.),
+# it does not query the database by client_id yet.
+# Path params:
+#   id  (int)  client ID, echoed back as client_id in the response
+# Returns 200 with { apiKey }.
+# Errors: plain-text 404 (http.NotFound) if the ID is not an integer.
+# See: cmd/api/api_keys.go getAPIKeyByClientIDHandler
+# @name getApiKeyByClientId
+GET {{host}}/v1/api/api-key/1

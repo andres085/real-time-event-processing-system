@@ -1,3 +1,5 @@
+// Package data provides the database models and query methods
+// for the API service, including API key management.
 package data
 
 import (
@@ -9,10 +11,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type ApiKey struct {
+type APIKey struct {
 	ID          int       `json:"id"`
 	KeyHash     key       `json:"-"`
-	ClientId    int       `json:"client_id"`
+	ClientID    int       `json:"client_id"`
 	Description string    `json:"description"`
 	Environment string    `json:"environment"`
 	IsActive    bool      `json:"is_active"`
@@ -42,29 +44,37 @@ func (k *key) Generate(env string) (string, error) {
 	return plainText, nil
 }
 
-type ApiKeyModel struct {
+type APIKeyModel struct {
 	DB *sql.DB
 }
 
-func (a ApiKeyModel) Insert(apiKey *ApiKey) error {
+func (a APIKeyModel) Insert(apiKey *APIKey) error {
 	query := `
 	INSERT INTO api_keys(client_id, key_hash, description, environment, is_active, rate_limit_per_minute, version)
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING id, created_at, version`
 
-	args := []any{apiKey.ClientId, apiKey.KeyHash, apiKey.Description, apiKey.Environment, apiKey.IsActive, apiKey.RateLimit, apiKey.Version}
+	args := []any{
+		apiKey.ClientID,
+		apiKey.KeyHash,
+		apiKey.Description,
+		apiKey.Environment,
+		apiKey.IsActive,
+		apiKey.RateLimit,
+		apiKey.Version,
+	}
 
 	return a.DB.QueryRow(query, args...).Scan(&apiKey.ID, &apiKey.CreatedAt, &apiKey.Version)
 }
 
-func (a ApiKeyModel) Get(id int) (*ApiKey, error) {
+func (a APIKeyModel) Get(id int) (*APIKey, error) {
 	return nil, nil
 }
 
-func (a ApiKeyModel) Update(apiKey *ApiKey) error {
+func (a APIKeyModel) Update(apiKey *APIKey) error {
 	return nil
 }
 
-func (a ApiKeyModel) Delete(id int) error {
+func (a APIKeyModel) Delete(id int) error {
 	return nil
 }

@@ -1,0 +1,12 @@
+### Get Metrics Volume
+# WIP: the handler does not return anything yet, it only has a test fmt.Println.
+# It responds 200 with an empty body until the real logic is implemented.
+# Idea: it should return volume metrics of processed events
+# (see internal/processor/worker for where that data is generated).
+# Path params:
+#   apiKeyId  API key whose metrics are requested
+# NOTE: the route is registered as /v1/api/metrics/volume/:apiKeyId, so this
+#       request (without the param) currently gets a 404.
+# See: cmd/api/metrics.go getMetricsVolumeHandler
+# @name metricsVolume
+GET {{host}}/v1/api/metrics/volume

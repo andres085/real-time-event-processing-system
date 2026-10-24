@@ -1,3 +1,5 @@
+// Command ingest starts the HTTP server that receives raw events
+// and writes them to the database for further processing.
 package main
 
 import (

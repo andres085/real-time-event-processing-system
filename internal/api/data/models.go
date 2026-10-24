@@ -7,14 +7,17 @@ import (
 
 var (
 	ErrRecordNotFound = errors.New("record not found")
+	ErrEditConflict   = errors.New("edit conflict")
 )
 
 type Models struct {
-	ApiKeys ApiKeyModel
+	APIKeys APIKeyModel
+	Clients ClientModel
 }
 
 func NewModels(db *sql.DB) Models {
 	return Models{
-		ApiKeys: ApiKeyModel{DB: db},
+		APIKeys: APIKeyModel{DB: db},
+		Clients: ClientModel{DB: db},
 	}
 }

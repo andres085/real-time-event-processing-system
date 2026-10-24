@@ -6,4 +6,3 @@ ALTER TABLE raw_events ADD CONSTRAINT raw_events_request_size_bytes_check CHECK 
 
 ALTER TABLE raw_events ADD CONSTRAINT raw_events_response_size_bytes_check CHECK (response_size_bytes >= 0);
 
-
