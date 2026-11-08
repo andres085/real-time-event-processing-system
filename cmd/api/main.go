@@ -12,7 +12,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/andres085/real-time-event-processing-system/internal/api/data"
+	apidata "github.com/andres085/real-time-event-processing-system/internal/api/data"
+	keydata "github.com/andres085/real-time-event-processing-system/internal/apikey/data"
 	_ "github.com/lib/pq"
 )
 
@@ -30,9 +31,10 @@ type config struct {
 }
 
 type application struct {
-	config config
-	logger *slog.Logger
-	models data.Models
+	config    config
+	logger    *slog.Logger
+	apiModels apidata.Models
+	keyModels keydata.Models
 }
 
 func main() {
@@ -60,9 +62,10 @@ func main() {
 	logger.Info("database connection pool established")
 
 	app := &application{
-		config: cfg,
-		logger: logger,
-		models: data.NewModels(db),
+		config:    cfg,
+		logger:    logger,
+		apiModels: apidata.NewModels(db),
+		keyModels: keydata.NewModels(db),
 	}
 
 	srv := &http.Server{

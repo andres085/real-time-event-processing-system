@@ -60,7 +60,7 @@ func (app *application) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		IPAddress:         input.IPAddress,
 	}
 
-	err = app.models.RawEvents.Insert(rawEvent)
+	err = app.rawEventModels.RawEvents.Insert(rawEvent)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

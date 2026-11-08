@@ -15,5 +15,5 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/ingest/healthcheck", app.healthcheckHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/ingest", app.ingestHandler)
 
-	return router
+	return (app.authenticate(router))
 }

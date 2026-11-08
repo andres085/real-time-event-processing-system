@@ -17,7 +17,7 @@ POST {{host}}/v1/api/api-key
 Content-Type: application/json
 
 {
-  "client_id": 1,
+  "client_id": "54ae688e-765a-4c3d-ab1e-7e95ab04e197",
   "description": "API key de prueba",
   "environment": "development",
   "rate_limit_per_minute": 2000

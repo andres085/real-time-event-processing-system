@@ -1,0 +1,83 @@
+# Ingest server runs on a different port than the API (see cmd/ingest/main.go -port, default 4000).
+# Paste here the plain-text "key" returned by createApiKey (requests/api-keys.http).
+@ingestHost = http://localhost:4000
+@apiKey = pk_development_KKitksF4xezUyGk4gYueEWQAXVm8PPkTrl5U7WPi2SM=
+
+
+### Ingest Event
+# Stores a raw event. Requires a valid API key.
+# Headers:
+#   X-API-KEY  "Bearer <key>"  key must be 26 chars long and its hash must exist in the DB
+# Body fields:
+#   timestamp            (RFC3339)  must not be in the future
+#   source               (string)
+#   method               (string)
+#   endpoint             (string)
+#   status_code          (int32)    100 - 599
+#   response_time_ms     (int64)    >= 0
+#   request_size_bytes   (int64)    >= 0
+#   response_size_bytes  (int64)    >= 0
+#   user_agent           (string)
+#   ip_address           (string)
+# Returns 200 with { message: "metrics stored successfully" }.
+# Errors: 401 from the authenticate middleware, 400 malformed JSON, 422 failed validation.
+# See: cmd/ingest/ingest.go ingestHandler, cmd/ingest/middleware.go authenticate
+# @name ingestEvent
+POST {{ingestHost}}/v1/ingest
+Content-Type: application/json
+X-API-KEY: Bearer {{apiKey}}
+
+{
+  "timestamp": "2026-10-25T12:00:00Z",
+  "source": "checkout-service",
+  "method": "GET",
+  "endpoint": "/v1/orders",
+  "status_code": 200,
+  "response_time_ms": 120,
+  "request_size_bytes": 512,
+  "response_size_bytes": 2048,
+  "user_agent": "Mozilla/5.0",
+  "ip_address": "192.168.0.10"
+}
+
+### Ingest Event - missing X-API-KEY header
+# Middleware: empty header -> 401 invalidCredentialsResponse.
+# @name ingestMissingKey
+POST {{ingestHost}}/v1/ingest
+Content-Type: application/json
+
+{}
+
+### Ingest Event - header without "Bearer" prefix
+# Middleware: header does not split into ["Bearer", <key>] -> 401 invalidCredentialsResponse.
+# @name ingestNoBearer
+POST {{ingestHost}}/v1/ingest
+Content-Type: application/json
+X-API-KEY: {{apiKey}}
+
+{}
+
+### Ingest Event - key with wrong length
+# Middleware: ValidateTokenPlaintext fails (not 26 chars) -> 401 invalidAuthenticationTokenResponse.
+# @name ingestWrongLength
+POST {{ingestHost}}/v1/ingest
+Content-Type: application/json
+X-API-KEY: Bearer tooshort
+
+{}
+
+### Ingest Event - well-formed key that does not exist
+# Middleware: 26 chars but GetByHash finds nothing -> 401 invalidAuthenticationTokenResponse.
+# @name ingestUnknownKey
+POST {{ingestHost}}/v1/ingest
+Content-Type: application/json
+X-API-KEY: Bearer AAAAAAAAAAAAAAAAAAAAAAAAAA
+
+{}
+
+### Healthcheck
+# NOTE: authenticate wraps the whole router, so this also requires X-API-KEY.
+# See: cmd/ingest/routes.go
+# @name ingestHealthcheck
+GET {{ingestHost}}/v1/ingest/healthcheck
+X-API-KEY: Bearer {{apiKey}}

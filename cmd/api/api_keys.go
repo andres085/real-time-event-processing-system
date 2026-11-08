@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/andres085/real-time-event-processing-system/internal/api/data"
+	"github.com/andres085/real-time-event-processing-system/internal/apikey/data"
+	"github.com/julienschmidt/httprouter"
 )
 
 func (app *application) createAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		ClientID    int    `json:"client_id"`
+		ClientID    string `json:"client_id"`
 		Description string `json:"description"`
 		Environment string `json:"environment"`
 		RateLimit   int32  `json:"rate_limit_per_minute"`
@@ -31,13 +32,13 @@ func (app *application) createAPIKeyHandler(w http.ResponseWriter, r *http.Reque
 		Version:     1,
 	}
 
-	plainTextKey, err := apiKey.KeyHash.Generate(input.Environment)
+	plainTextKey, err := apiKey.Generate(input.Environment)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.models.APIKeys.Insert(apiKey)
+	err = app.keyModels.APIKeys.Insert(apiKey)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -58,8 +59,9 @@ func (app *application) createAPIKeyHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) getAPIKeyByClientIDHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readIDParam(r)
-	if err != nil {
+	params := httprouter.ParamsFromContext(r.Context())
+	id := params.ByName("id")
+	if id == "" {
 		http.NotFound(w, r)
 		return
 	}
@@ -74,7 +76,7 @@ func (app *application) getAPIKeyByClientIDHandler(w http.ResponseWriter, r *htt
 		Version:     2,
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": apiKey}, nil)
+	err := app.writeJSON(w, http.StatusOK, envelope{"apiKey": apiKey}, nil)
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(

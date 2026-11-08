@@ -25,7 +25,7 @@ func (app *application) createClient(w http.ResponseWriter, r *http.Request) {
 		Name: input.Name,
 	}
 
-	err = app.models.Clients.Insert(client)
+	err = app.apiModels.Clients.Insert(client)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -49,7 +49,7 @@ func (app *application) showClientHandler(w http.ResponseWriter, r *http.Request
 	params := httprouter.ParamsFromContext(r.Context())
 	id := params.ByName("id")
 
-	client, err := app.models.Clients.Get(id)
+	client, err := app.apiModels.Clients.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -77,21 +77,20 @@ func (app *application) listClientsHandler(w http.ResponseWriter, r *http.Reques
 
 	qs := r.URL.Query()
 
-	// input.ID = app.readString(qs, "id", "")
 	input.Name = app.readString(qs, "name", "")
 
-	input.Filters.Page = app.readInt(qs, "page", 1, v)
-	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Page = app.readInt(qs, "page", 1, v)
+	input.PageSize = app.readInt(qs, "page_size", 20, v)
 
-	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafelist = []string{"id", "name"}
+	input.Sort = app.readString(qs, "sort", "id")
+	input.SortSafelist = []string{"id", "name"}
 
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	clients, metadata, err := app.models.Clients.GetAll(input.Name, input.Filters)
+	clients, metadata, err := app.apiModels.Clients.GetAll(input.Name, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -107,7 +106,7 @@ func (app *application) updateClientHandler(w http.ResponseWriter, r *http.Reque
 	params := httprouter.ParamsFromContext(r.Context())
 	id := params.ByName("id")
 
-	client, err := app.models.Clients.Get(id)
+	client, err := app.apiModels.Clients.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -139,7 +138,7 @@ func (app *application) updateClientHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.models.Clients.Update(client)
+	err = app.apiModels.Clients.Update(client)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrEditConflict):
@@ -160,7 +159,7 @@ func (app *application) deleteClientHandler(w http.ResponseWriter, r *http.Reque
 	params := httprouter.ParamsFromContext(r.Context())
 	id := params.ByName("id")
 
-	err := app.models.Clients.Delete(id)
+	err := app.apiModels.Clients.Delete(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):

@@ -11,13 +11,11 @@ var (
 )
 
 type Models struct {
-	APIKeys APIKeyModel
 	Clients ClientModel
 }
 
 func NewModels(db *sql.DB) Models {
 	return Models{
-		APIKeys: APIKeyModel{DB: db},
 		Clients: ClientModel{DB: db},
 	}
 }

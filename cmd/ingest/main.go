@@ -12,6 +12,7 @@ import (
 	"os"
 	"time"
 
+	apikeydata "github.com/andres085/real-time-event-processing-system/internal/apikey/data"
 	"github.com/andres085/real-time-event-processing-system/internal/ingest/data"
 	_ "github.com/lib/pq"
 )
@@ -30,9 +31,10 @@ type config struct {
 }
 
 type application struct {
-	config config
-	logger *slog.Logger
-	models data.Models
+	config         config
+	logger         *slog.Logger
+	rawEventModels data.Models
+	apiKeyModels   apikeydata.Models
 }
 
 func main() {
@@ -61,9 +63,10 @@ func main() {
 	logger.Info("database connection pool stablished")
 
 	app := &application{
-		config: cfg,
-		logger: logger,
-		models: data.NewModels(db),
+		config:         cfg,
+		logger:         logger,
+		rawEventModels: data.NewModels(db),
+		apiKeyModels:   apikeydata.NewModels(db),
 	}
 
 	srv := &http.Server{
